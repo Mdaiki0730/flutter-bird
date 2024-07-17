@@ -1,0 +1,69 @@
+name: Deploy Netlify
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+permissions:
+  contents: write
+  pull-requests: write
+  statuses: write
+  deployments: write
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: subosito/flutter-action@v2.16.0
+        with:
+          flutter-version: '3.22.2'
+
+      - name: make .env
+        working-directory: flutter_bird_app
+        run: |
+          touch .env
+          echo WALLET_CONNECT_PROJECT_ID=${{secrets.WALLET_CONNECT_PROJECT_ID}} >> .env
+
+      - name: show version
+        working-directory: flutter_bird_app
+        run: flutter --version
+
+      - name: pub get
+        working-directory: flutter_bird_app
+        run: flutter pub get
+
+      - name: build
+        working-directory: flutter_bird_app
+        run: flutter build web
+
+      - name: Set GitHub Deployment Environment
+        id: github_deployment_environment
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = "push" ]; then
+            echo "GITHUB_DEPLOYMENT_ENVIRONMENT=Netlify prd" >> "${GITHUB_OUTPUT}"
+          else
+            echo "GITHUB_DEPLOYMENT_ENVIRONMENT=Netlify Preview" >> "${GITHUB_OUTPUT}"
+          fi
+
+      - name: Deploy to Netlify
+        uses: nwtgck/actions-netlify@v1.2
+        with:
+          publish-dir: './flutter_bird_app/build/web'
+          production-branch: master
+          github-deployment-environment: ${{ steps.github_deployment_environment.outputs.GITHUB_DEPLOYMENT_ENVIRONMENT }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          deploy-message: ${{ github.event.head_commit.message || github.event.pull_request.title }}
+          alias: deploy-preview-${{ github.event.number }}
+          fails-without-credentials: true
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_PAT }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
