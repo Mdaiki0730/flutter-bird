@@ -8,12 +8,6 @@ on:
     branches:
       - master
 
-permissions:
-  contents: write
-  pull-requests: write
-  statuses: write
-  deployments: write
-
 jobs:
   build-and-deploy:
     runs-on: ubuntu-22.04
