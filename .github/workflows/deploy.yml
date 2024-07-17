@@ -49,10 +49,9 @@ jobs:
           fi
 
       - name: Deploy to Netlify
-        working-directory: flutter_bird_app
         uses: nwtgck/actions-netlify@v1.2
         with:
-          publish-dir: './build/web'
+          publish-dir: './flutter_bird_app/build/web'
           production-branch: master
           github-deployment-environment: ${{ steps.github_deployment_environment.outputs.GITHUB_DEPLOYMENT_ENVIRONMENT }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
